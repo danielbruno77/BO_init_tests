@@ -2,3 +2,4 @@ numpy>=1.24
 bayesian-optimization>=2.0
 scikit-optimize>=0.10
 matplotlib>=3.7
+plotly
