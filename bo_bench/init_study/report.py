@@ -108,7 +108,10 @@ def summarise(problem, runs, n_inits, designs):
         for design, fin in finals.items():
             rs = runs[(design, n0)]
             init = np.array([best_so_far(f, feas)[n0 - 1] for _, f, feas in rs])
-            q = lambda a: f"{_fmt(np.median(a))} [{_fmt(np.percentile(a, 25))}, {_fmt(np.percentile(a, 75))}]"
+
+            def q(a):
+                with np.errstate(invalid="ignore"):  # percentiles between inf values
+                    return f"{_fmt(np.median(a))} [{_fmt(np.percentile(a, 25))}, {_fmt(np.percentile(a, 75))}]"
             p = "" if design == "random" or "random" not in finals else \
                 f"{mannwhitneyu(fin, finals['random']).pvalue:.2f}"
             lines.append(f"| {n0} | {design} | {len(fin)} | {q(init)} | {q(fin)} | {p} | "
