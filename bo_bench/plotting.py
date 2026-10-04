@@ -18,6 +18,7 @@ def plot_convergence(curves, path, title="", n_init=None, optimum=None):
     fig.patch.set_facecolor("#fcfcfb")
     ax.set_facecolor("#fcfcfb")
 
+    ends = []
     for i, (method, runs) in enumerate(curves.items()):
         color = SERIES_COLORS[i]
         x = np.arange(1, runs.shape[1] + 1)
@@ -25,8 +26,7 @@ def plot_convergence(curves, path, title="", n_init=None, optimum=None):
         q25, q75 = np.percentile(runs, [25, 75], axis=0)
         ax.fill_between(x, q25, q75, color=color, alpha=0.18, linewidth=0)
         ax.plot(x, median, color=color, linewidth=2, label=f"{method} (median, IQR)")
-        ax.annotate(f"{method}  {median[-1]:.3g}", (x[-1], median[-1]), xytext=(6, 0),
-                    textcoords="offset points", va="center", color=TEXT, fontsize=9)
+        ends.append((median[-1], x[-1], method))
 
     if optimum is not None:
         ax.axhline(optimum, color=MUTED, linewidth=1, linestyle=":")
@@ -37,6 +37,8 @@ def plot_convergence(curves, path, title="", n_init=None, optimum=None):
         ax.axvline(n_init + 0.5, color=MUTED, linewidth=1, linestyle="--")
         ax.annotate("end of random init", (n_init + 0.5, 0), xycoords=("data", "axes fraction"),
                     xytext=(4, 6), textcoords="offset points", color=MUTED, fontsize=8)
+
+    _label_line_ends(fig, ax, ends)
 
     ax.set_xlabel("Evaluation", color=TEXT)
     ax.set_ylabel("Best objective so far (higher is better)", color=TEXT)
@@ -53,3 +55,19 @@ def plot_convergence(curves, path, title="", n_init=None, optimum=None):
     fig.tight_layout()
     fig.savefig(path, facecolor=fig.get_facecolor())
     plt.close(fig)
+
+
+def _label_line_ends(fig, ax, ends, min_gap_pt=12):
+    """Direct-label each line at its right end, nudging labels apart so they don't overlap."""
+    fig.canvas.draw()
+    min_gap_px = min_gap_pt * fig.dpi / 72
+    to_px = ax.transData.transform
+    placed = []
+    for y, x, method in sorted(ends):
+        px_y = to_px((x, y))[1]
+        if placed and px_y - placed[-1] < min_gap_px:
+            px_y = placed[-1] + min_gap_px
+        placed.append(px_y)
+        offset = px_y - to_px((x, y))[1]
+        ax.annotate(f"{method}  {y:.3g}", (x, y), xytext=(6, offset * 72 / fig.dpi),
+                    textcoords="offset points", va="center", color=TEXT, fontsize=9)
