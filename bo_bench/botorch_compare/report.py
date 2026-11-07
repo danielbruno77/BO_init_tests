@@ -16,7 +16,7 @@ from scipy.stats import mannwhitneyu  # noqa: E402
 from ..init_study.problems import PROBLEMS  # noqa: E402
 from ..init_study.report import best_so_far, regret  # noqa: E402
 from ..plotting import MUTED, SERIES_COLORS, TEXT  # noqa: E402
-from .methods import METHODS  # noqa: E402
+from .methods import DEFAULT_METHODS, METHODS  # noqa: E402
 from .run import RAW  # noqa: E402
 
 

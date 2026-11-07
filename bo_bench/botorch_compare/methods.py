@@ -18,6 +18,8 @@ value of every evaluation in order, initial points included.
 * ``botorch_q4``: the same model, proposing 4 points per GP fit with
   ``qLogExpectedImprovement`` (Monte Carlo, constraints via its
   ``constraints`` argument), as with 4 simulations running in parallel.
+* ``botorch_mps``: ``botorch`` on an Apple-silicon GPU via MPS, in float32
+  (MPS has no float64). Run it explicitly with ``--methods botorch_mps``.
 """
 import time
 import warnings
@@ -83,7 +85,7 @@ def run_sklearn_loop(problem, X0, budget, seed):
 
 
 # --------------------------------------------------------------------------- botorch
-def run_botorch(problem, X0, budget, seed, q=1):
+def run_botorch(problem, X0, budget, seed, q=1, device="cpu"):
     import torch
     from botorch.acquisition import LogExpectedImprovement, qLogExpectedImprovement
     from botorch.acquisition.analytic import LogConstrainedExpectedImprovement
@@ -95,9 +97,11 @@ def run_botorch(problem, X0, budget, seed, q=1):
     from gpytorch.mlls import ExactMarginalLogLikelihood, SumMarginalLogLikelihood
 
     torch.manual_seed(seed)
-    dtype = torch.double
+    # Apple's MPS backend has no float64, so the GPU variant runs in float32.
+    dtype = torch.float32 if device == "mps" else torch.double
+    tkw = dict(dtype=dtype, device=device)
     d, m = problem.dim, problem.n_constraints
-    bounds = torch.stack([torch.zeros(d, dtype=dtype), torch.ones(d, dtype=dtype)])
+    bounds = torch.stack([torch.zeros(d, **tkw), torch.ones(d, **tkw)])
 
     U, F, G = [], [], []
 
@@ -112,10 +116,10 @@ def run_botorch(problem, X0, budget, seed, q=1):
         evaluate(u)
 
     while len(F) < budget:
-        X = torch.tensor(np.array(U), dtype=dtype)
+        X = torch.tensor(np.array(U), **tkw)
         # BoTorch maximises, so model the negated (log-)objective.
-        y = -torch.tensor(_objective_for_model(problem, np.array(F)), dtype=dtype).unsqueeze(-1)
-        g = torch.tensor(np.array(G).reshape(len(F), m), dtype=dtype)
+        y = -torch.tensor(_objective_for_model(problem, np.array(F)), **tkw).unsqueeze(-1)
+        g = torch.tensor(np.array(G).reshape(len(F), m), **tkw)
         feas = (g <= 0).all(dim=-1)
 
         with warnings.catch_warnings():
@@ -152,7 +156,7 @@ def run_botorch(problem, X0, budget, seed, q=1):
             cand, _ = optimize_acqf(acqf, bounds=bounds, q=q,
                                     num_restarts=10 if q == 1 or m == 0 else 5,
                                     raw_samples=512 if q == 1 or m == 0 else 256)
-        for u in cand.detach().numpy()[: budget - len(F)]:
+        for u in cand.detach().cpu().double().numpy()[: budget - len(F)]:
             evaluate(u)
 
     secs = time.time() - t0
@@ -175,9 +179,16 @@ def run_botorch_q4(problem, X0, budget, seed):
     return run_botorch(problem, X0, budget, seed, q=4)
 
 
+def run_botorch_mps(problem, X0, budget, seed):
+    """Same as ``botorch`` but on the Apple-silicon GPU (MPS), in float32."""
+    return run_botorch(problem, X0, budget, seed, device="mps")
+
+
 METHODS = {
     "skopt": run_skopt,
     "sklearn_loop": run_sklearn_loop,
     "botorch": run_botorch,
     "botorch_q4": run_botorch_q4,
+    "botorch_mps": run_botorch_mps,  # only on Apple silicon; not in the default sweep
 }
+DEFAULT_METHODS = ["skopt", "sklearn_loop", "botorch", "botorch_q4"]

@@ -22,7 +22,7 @@ import numpy as np  # noqa: E402
 
 from ..init_study.designs import initial_design  # noqa: E402
 from ..init_study.problems import PROBLEMS  # noqa: E402
-from .methods import METHODS  # noqa: E402
+from .methods import DEFAULT_METHODS, METHODS  # noqa: E402
 
 RAW = Path(__file__).resolve().parents[2] / "results" / "botorch_compare" / "raw"
 INIT_MULTIPLIER = 2  # best setting in the initial-design study
@@ -53,7 +53,7 @@ def _task(args):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--problems", nargs="+", default=list(PROBLEMS))
-    ap.add_argument("--methods", nargs="+", default=list(METHODS))
+    ap.add_argument("--methods", nargs="+", default=DEFAULT_METHODS, choices=list(METHODS))
     ap.add_argument("--seeds", type=int, default=20)
     ap.add_argument("--workers", type=int, default=os.cpu_count())
     a = ap.parse_args()
