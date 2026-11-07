@@ -4,3 +4,5 @@ scikit-optimize>=0.10
 matplotlib>=3.7
 scipy>=1.7
 scikit-learn>=1.0
+torch>=2.0
+botorch>=0.12
