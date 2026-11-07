@@ -15,8 +15,9 @@ python -m bo_bench.botorch_compare.report                    # writes reports/bo
 
 `run` accepts `--problems`, `--methods`, `--seeds` and `--workers`, and resumes
 from `results/botorch_compare/raw/` if interrupted. The full sweep took about
-3.5 hours on 4 CPU cores (CPU-only PyTorch); almost all of it is the batch
-variant on the constrained problems.
+2 hours on a 4-core cloud sandbox and under 10 minutes on an M4 Max with 10
+workers. The optional GPU variant runs with
+`--methods botorch_mps --workers 1` on Apple silicon.
 
 ## Methods (`bo_bench/botorch_compare/methods.py`)
 
@@ -27,4 +28,4 @@ variant on the constrained problems.
 | `botorch` | `SingleTaskGP` (Matern-5/2 ARD with BoTorch's default priors), `LogExpectedImprovement`, or `LogConstrainedExpectedImprovement` with one GP per constraint; acquisition maximised by multi-start L-BFGS through autograd (`optimize_acqf`). |
 | `botorch_q4` | Same model, 4 points per iteration from `qLogExpectedImprovement` (Monte Carlo, constraints passed natively), i.e. 4 simulations in parallel. 10 seeds. |
 
-See `summary.md` for the tables and plots.
+See `findings.md` for the conclusions and `summary.md` for the tables and plots.

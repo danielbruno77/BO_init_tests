@@ -91,7 +91,7 @@ def summarise(problem, runs, methods):
     lines = [f"### {problem.name} (d={problem.dim}, budget={problem.budget}, best known {problem.f_opt:g})", "",
              "Final best feasible objective, median [25th, 75th percentile] over seeds. "
              "`p vs skopt` is a two-sided Mann-Whitney U test on the final values. "
-             "Time is median wall-clock seconds per run on one CPU thread.", "",
+             "Time is median wall-clock seconds per run on one CPU thread (`botorch_mps`: on the GPU).", "",
              "| method | seeds | final | median relative/abs. regret | p vs skopt | feasible at end | time (s) |",
              "| :--- | ---: | :--- | ---: | ---: | ---: | ---: |"]
     finals = {m: np.array([best_so_far(f, feas)[-1] for _, f, feas, _, _ in runs[m]])
